@@ -1,0 +1,583 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Black Desert Online Boss Timer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Roboto', Arial, sans-serif;
+      background-color: #1C2526; /* Navy Blue */
+      color: #D3D3D3; /* Light Grey for text */
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #FFFFFF; /* White for header */
+      text-align: center;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    }
+    .boss-info-container {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .boss-info {
+      flex: 1;
+      margin: 0 10px;
+      padding: 15px;
+      background-color: #2A3439; /* Slightly lighter Navy Blue */
+      border: 2px solid #4682B4; /* Steel Grey */
+      border-radius: 8px;
+      text-align: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .boss-info:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 8px rgba(70, 130, 180, 0.3); /* Steel Grey shadow */
+    }
+    .boss-info h2 {
+      color: #4682B4; /* Steel Grey */
+      margin: 0 0 10px;
+      font-size: 0.9em; /* Smaller than boss names */
+    }
+    .boss-info p {
+      color: #FFFFFF; /* White for default text */
+      margin: 0;
+      font-size: 1.1em; /* Boss names */
+    }
+    .timer {
+      color: #D3D3D3; /* Light Grey for timer */
+      font-size: 1.3em; /* Larger than boss names */
+      margin-top: 5px;
+    }
+    .timer-green {
+      color: #008000; /* Green for timers < 3 minutes */
+      font-size: 1.3em; /* Larger than boss names */
+      margin-top: 5px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #2A3439; /* Slightly lighter Navy Blue */
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+    th, td {
+      border: 1px solid #4682B4; /* Steel Grey */
+      padding: 10px;
+      text-align: center;
+      color: #D3D3D3; /* Light Grey */
+    }
+    th {
+      background-color: #4682B4; /* Steel Grey */
+      color: #FFFFFF; /* White */
+      font-weight: bold;
+    }
+    td:hover {
+      background-color: #3A4B5C; /* Slightly lighter Steel Grey for hover */
+      cursor: pointer;
+    }
+    tr.next-period {
+      background-color: #6A829C; /* Lighter Steel Grey for highlight */
+    }
+    td.next-boss-cell {
+      background-color: #424756 !important; /* green highlight */
+      color: #FFFFFF !important;
+      font-weight: bold;
+      border: 2px solid #809DAF; /*border to make it stand out */
+    }
+    td.next-boss-cell:hover {
+      background-color: #424756 !important; /* keep same highlight on hover */
+      cursor: pointer;
+    }
+
+
+
+    /* Boss-specific colors */
+    .boss-Nouver { color: orange; }
+    .boss-Kzarka { color: rgb(245, 101, 101); }
+    .boss-Garmoth { color: pink; }
+    .boss-Sangoon { color: green; }
+    .boss-GoldenPigKing { color: yellow; }
+    .boss-Uturi { color: rgb(66, 153, 225); }
+    .boss-Bulgasal { color: brown; }
+    .boss-Vell { color: teal; }
+    .boss-Kutum { color: rgb(159, 122, 234); }
+    .boss-Karanda { color: skyblue; }
+    .boss-BlackShadow { color: #696969; } /* Retained from previous */
+    @media (max-width: 600px) {
+      .boss-info-container {
+        flex-direction: column;
+      }
+      .boss-info {
+        margin: 10px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Black Desert Online Boss Timer</h1>
+
+  <div class="boss-info-container">
+    <div class="boss-info" role="region" aria-label="Previous Boss">
+      <h2>Previous Boss</h2>
+      <p id="previous-boss">Loading...</p>
+      <p id="previous-timer" class="timer"></p>
+    </div>
+    <div class="boss-info" role="region" aria-label="Next Boss">
+      <h2>Next Boss</h2>
+      <p id="next-boss">Loading...</p>
+      <p id="next-timer" class="timer"></p>
+    </div>
+    <div class="boss-info" role="region" aria-label="Followed By">
+      <h2>Followed By</h2>
+      <p id="followed-by">Loading...</p>
+      <p id="followed-by-timer" class="timer"></p>
+    </div>
+  </div>
+<table id="boss-table">
+  <tr>
+    <th>Time</th>
+    <th>Monday</th>
+    <th>Tuesday</th>
+    <th>Wednesday</th>
+    <th>Thursday</th>
+    <th>Friday</th>
+    <th>Saturday</th>
+    <th>Sunday</th>
+  </tr>
+  <tr>
+    <td>12:00 AM</td>
+    <td><span class="boss-Nouver">Nouver</span></td>
+    <td><span class="boss-Kzarka">Kzarka</span><br><span class="boss-Uturi">Uturi</span></td>
+    <td><span class="boss-Nouver">Nouver</span></td>
+    <td><span class="boss-Karanda">Karanda</span></td>
+    <td><span class="boss-Kutum">Kutum</span></td>
+    <td><span class="boss-Kutum">Kutum</span></td>
+    <td><span class="boss-Kutum">Kutum</span></td>
+  </tr>
+  <tr>
+    <td>3:00 AM</td>
+    <td><span class="boss-Kzarka">Kzarka</span><br><span class="boss-Sangoon">Sangoon</span><br><span class="boss-GoldenPigKing">Golden Pig King</span></td>
+    <td>-</td>
+    <td><span class="boss-Kutum">Kutum</span></td>
+    <td><span class="boss-Nouver">Nouver</span></td>
+    <td><span class="boss-Nouver">Nouver</span><br><span class="boss-Sangoon">Sangoon</span></td>
+    <td><span class="boss-Karanda">Karanda</span></td>
+    <td><span class="boss-Nouver">Nouver</span><br><span class="boss-Sangoon">Sangoon</span></td>
+  </tr>
+  <tr>
+    <td>5:00 AM</td>
+    <td><span class="boss-Garmoth">Garmoth</span></td>
+    <td><span class="boss-Garmoth">Garmoth</span><br><span class="boss-GoldenPigKing">Golden Pig King</span></td>
+    <td><span class="boss-Garmoth">Garmoth</span><br><span class="boss-GoldenPigKing">Golden Pig King</span></td>
+    <td><span class="boss-Garmoth">Garmoth</span><br><span class="boss-GoldenPigKing">Golden Pig King</span></td>
+    <td><span class="boss-Garmoth">Garmoth</span><br><span class="boss-Uturi">Uturi</span></td>
+    <td><span class="boss-Garmoth">Garmoth</span><br><span class="boss-Bulgasal">Bulgasal</span></td>
+    <td><span class="boss-Garmoth">Garmoth</span><br><span class="boss-GoldenPigKing">Golden Pig King</span><br><span class="boss-Uturi">Uturi</span></td>
+  </tr>
+  <tr>
+    <td>7:00 AM</td>
+    <td><span class="boss-Vell">Vell</span></td>
+    <td><span class="boss-Kutum">Kutum</span><br><span class="boss-Bulgasal">Bulgasal</span></td>
+    <td><span class="boss-Nouver">Nouver</span><br><span class="boss-Bulgasal">Bulgasal</span></td>
+    <td><span class="boss-Kutum">Kutum</span><br><span class="boss-Bulgasal">Bulgasal</span></td>
+    <td><span class="boss-Kzarka">Kzarka</span><br><span class="boss-Sangoon">Sangoon</span><br><span class="boss-Bulgasal">Bulgasal</span></td>
+    <td><span class="boss-Nouver">Nouver</span><br><span class="boss-Uturi">Uturi</span><br><span class="boss-GoldenPigKing">Golden Pig King</span></td>
+    <td><span class="boss-Bulgasal">Bulgasal</span><br><span class="boss-GoldenPigKing">Golden Pig King</span></td>
+  </tr>
+  <tr>
+    <td>10:00 AM</td>
+    <td><span class="boss-Bulgasal">Bulgasal</span></td>
+    <td><span class="boss-Nouver">Nouver</span><br><span class="boss-Bulgasal">Bulgasal</span><br><span class="boss-GoldenPigKing">Golden Pig King</span></td>
+    <td><span class="boss-Karanda">Karanda</span></td>
+    <td><span class="boss-Vell">Vell</span><br><span class="boss-Sangoon">Sangoon</span></td>
+    <td><span class="boss-Kutum">Kutum</span><br><span class="boss-Bulgasal">Bulgasal</span></td>
+    <td><span class="boss-Kzarka">Kzarka</span><br><span class="boss-Bulgasal">Bulgasal</span></td>
+    <td><span class="boss-Karanda">Karanda</span><br><span class="boss-Kzarka">Kzarka</span><br><span class="boss-Bulgasal">Bulgasal</span></td>
+  </tr>
+  <tr>
+    <td>10:15 AM</td>
+    <td><span class="boss-Garmoth">Garmoth</span></td>
+    <td>-</td>
+    <td>-</td>
+    <td>-</td>
+    <td>-</td>
+    <td>-</td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td>1:15 PM</td>
+    <td><span class="boss-Kzarka">Kzarka</span><br><span class="boss-Nouver">Nouver</span><br><span class="boss-Uturi">Uturi</span></td>
+    <td><span class="boss-Kzarka">Kzarka</span><br><span class="boss-Sangoon">Sangoon</span></td>
+    <td><span class="boss-Bulgasal">Bulgasal</span></td>
+    <td><span class="boss-Karanda">Karanda</span><br><span class="boss-Kzarka">Kzarka</span><br><span class="boss-Uturi">Uturi</span></td>
+    <td><span class="boss-Uturi">Uturi</span></td>
+    <td><span class="boss-Kzarka">Kzarka</span><br><span class="boss-Kutum">Kutum</span></td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td>2:15 PM</td>
+    <td><span class="boss-Garmoth">Garmoth</span><br><span class="boss-GoldenPigKing">Golden Pig King</span></td>
+    <td><span class="boss-Garmoth">Garmoth</span><br><span class="boss-Uturi">Uturi</span></td>
+    <td><span class="boss-Garmoth">Garmoth</span><br><span class="boss-Sangoon">Sangoon</span></td>
+    <td><span class="boss-Garmoth">Garmoth</span></td>
+    <td><span class="boss-Garmoth">Garmoth</span><br><span class="boss-GoldenPigKing">Golden Pig King</span></td>
+    <td><span class="boss-Garmoth">Garmoth</span></td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td>3:15 PM</td>
+    <td><span class="boss-Karanda">Karanda</span><br><span class="boss-Kutum">Kutum</span><br><span class="boss-Sangoon">Sangoon</span></td>
+    <td><span class="boss-Karanda">Karanda</span><br><span class="boss-Sangoon">Sangoon</span></td>
+    <td><span class="boss-Kzarka">Kzarka</span><br><span class="boss-Kutum">Kutum</span><br><span class="boss-Uturi">Uturi</span></td>
+    <td><span class="boss-Nouver">Nouver</span><br><span class="boss-GoldenPigKing">Golden Pig King</span></td>
+    <td><span class="boss-Karanda">Karanda</span><br><span class="boss-Kzarka">Kzarka</span><br><span class="boss-Sangoon">Sangoon</span></td>
+    <td><span class="boss-Karanda">Karanda</span><br><span class="boss-GoldenPigKing">Golden Pig King</span></td>
+    <td><span class="boss-Nouver">Nouver</span><br><span class="boss-Kutum">Kutum</span><br><span class="boss-Sangoon">Sangoon</span></td>
+  </tr>
+  <tr>
+    <td>5:00 PM</td>
+    <td><span class="boss-Karanda">Karanda</span></td>
+    <td><span class="boss-Kutum">Kutum</span></td>
+    <td><span class="boss-Karanda">Karanda</span></td>
+    <td><span class="boss-Kutum">Kutum</span></td>
+    <td><span class="boss-Nouver">Nouver</span></td>
+    <td><span class="boss-Uturi">Uturi</span></td>
+    <td><span class="boss-Kzarka">Kzarka</span><br><span class="boss-Uturi">Uturi</span></td>
+  </tr>
+  <tr>
+    <td>8:00 PM</td>
+    <td><span class="boss-Kzarka">Kzarka</span></td>
+    <td><span class="boss-Kzarka">Kzarka</span></td>
+    <td><span class="boss-Kzarka">Kzarka</span></td>
+    <td>-</td>
+    <td><span class="boss-Karanda">Karanda</span></td>
+    <td><span class="boss-Nouver">Nouver</span></td>
+    <td><span class="boss-Kutum">Kutum</span></td>
+  </tr>
+</table>
+
+
+<script>
+  // Boss schedule data (parsed from table)
+const schedule = [
+  { time: "00:00", days: { Monday: ["Nouver"], Tuesday: ["Kzarka","Uturi"], Wednesday: ["Nouver"], Thursday: ["Karanda"], Friday: ["Kutum"], Saturday: ["Kutum"], Sunday: ["Kutum"] }},
+  { time: "03:00", days: { Monday: ["Kzarka","Sangoon","Golden Pig King"], Tuesday: [], Wednesday: ["Kutum"], Thursday: ["Nouver"], Friday: ["Nouver","Sangoon"], Saturday: ["Karanda"], Sunday: ["Nouver","Sangoon"] }},
+  { time: "05:00", days: { Monday: ["Garmoth"], Tuesday: ["Garmoth","Golden Pig King"], Wednesday: ["Garmoth","Golden Pig King"], Thursday: ["Garmoth","Golden Pig King"], Friday: ["Garmoth","Uturi"], Saturday: ["Garmoth","Bulgasal"], Sunday: ["Garmoth","Golden Pig King","Uturi"] }},
+  { time: "07:00", days: { Monday: ["Vell"], Tuesday: ["Kutum","Bulgasal"], Wednesday: ["Nouver","Bulgasal"], Thursday: ["Kutum","Bulgasal"], Friday: ["Kzarka","Sangoon","Bulgasal"], Saturday: ["Nouver","Uturi","Golden Pig King"], Sunday: ["Bulgasal","Golden Pig King"] }},
+  { time: "10:00", days: { Monday: ["Bulgasal"], Tuesday: ["Nouver","Bulgasal","Golden Pig King"], Wednesday: ["Karanda"], Thursday: ["Vell","Sangoon"], Friday: ["Kutum","Bulgasal"], Saturday: ["Kzarka","Bulgasal"], Sunday: ["Karanda","Kzarka","Bulgasal"] }},
+  { time: "10:15", days: { Monday: ["Garmoth"], Tuesday: [], Wednesday: [], Thursday: [], Friday: [], Saturday: [], Sunday: [] }},
+  { time: "13:15", days: { Monday: ["Kzarka","Nouver","Uturi"], Tuesday: ["Kzarka","Sangoon"], Wednesday: ["Bulgasal"], Thursday: ["Karanda","Kzarka","Uturi"], Friday: ["Uturi"], Saturday: ["Kzarka","Kutum"], Sunday: [] }},
+  { time: "14:15", days: { Monday: ["Garmoth","Golden Pig King"], Tuesday: ["Garmoth","Uturi"], Wednesday: ["Garmoth","Sangoon"], Thursday: ["Garmoth"], Friday: ["Garmoth","Golden Pig King"], Saturday: ["Garmoth"], Sunday: [] }},
+  { time: "15:15", days: { Monday: ["Karanda","Kutum","Sangoon"], Tuesday: ["Karanda","Sangoon"], Wednesday: ["Kzarka","Kutum","Uturi"], Thursday: ["Nouver","Golden Pig King"], Friday: ["Karanda","Kzarka","Sangoon"], Saturday: ["Karanda","Golden Pig King"], Sunday: ["Nouver","Kutum","Sangoon"] }},
+  { time: "17:00", days: { Monday: ["Karanda"], Tuesday: ["Kutum"], Wednesday: ["Karanda"], Thursday: ["Kutum"], Friday: ["Nouver"], Saturday: ["Uturi"], Sunday: ["Kzarka","Uturi"] }},
+  { time: "20:00", days: { Monday: ["Kzarka"], Tuesday: ["Kzarka"], Wednesday: ["Kzarka"], Thursday: [], Friday: ["Karanda"], Saturday: ["Nouver"], Sunday: ["Kutum"] }}
+];
+
+
+    // Boss color mapping for dynamic application
+    const bossColors = {
+      "Nouver": "boss-Nouver",
+      "Kzarka": "boss-Kzarka",
+      "Karanda": "boss-Karanda",
+      "Kutum": "boss-Kutum",
+      "Garmoth": "boss-Garmoth",
+      "Vell": "boss-Vell",
+      "Uturi": "boss-Uturi",
+      "Sangoon": "boss-Sangoon",
+      "Bulgasal": "boss-Bulgasal",
+      "Golden Pig King": "boss-GoldenPigKing",
+      "Black Shadow": "boss-BlackShadow"
+    };
+
+    // Function to format time difference as HH:MM:SS
+    function formatTimeDiff(seconds) {
+      const hours = Math.floor(seconds / 3600);
+      seconds %= 3600;
+      const minutes = Math.floor(seconds / 60);
+      seconds = Math.floor(seconds % 60);
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    // Function to convert time string (HH:MM) to minutes
+    function timeToMinutes(timeStr) {
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      return hours * 60 + minutes;
+    }
+
+    // Convert a UTC+10 schedule time to local system minutes
+function convertScheduleTimeToLocalMinutes(timeStr) {
+  const [hours, minutes] = timeStr.split(':').map(Number);
+
+  // Time in minutes from midnight UTC+10
+  const scheduleMinutesUTC10 = hours * 60 + minutes;
+
+  // Use a fresh "now" each time
+  const now = new Date();
+
+  // Offset between UTC+10 and system local
+  const localOffsetMinutes = -now.getTimezoneOffset(); // system offset from UTC (positive east)
+  const utc10OffsetMinutes = 10 * 60; // UTC+10 offset from UTC
+
+  const diffMinutes = localOffsetMinutes - utc10OffsetMinutes;
+
+  // Shift schedule time into local timezone
+  return (scheduleMinutesUTC10 + diffMinutes + 24 * 60) % (24 * 60);
+}
+
+// Ensure any scheduled time is pushed into the future
+function normalizeFutureTime(targetSeconds, currentSeconds) {
+  while (targetSeconds <= currentSeconds) {
+    targetSeconds += 24 * 3600; // push to next day
+  }
+  return targetSeconds;
+}
+
+
+    function findFollowedBy(startIndex, startDay) {
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  let dayIndex = days.indexOf(startDay);
+
+  for (let offset = 0; offset < 7; offset++) { // search up to 7 days ahead
+    const day = days[(dayIndex + offset) % 7];
+
+    for (let j = (offset === 0 ? startIndex + 1 : 0); j < schedule.length; j++) {
+      const futureBosses = schedule[j].days[day] || [];
+      if (futureBosses.length > 0) {
+        return {
+          bosses: futureBosses.map(boss => `<span class="${bossColors[boss]}">${boss}</span>`).join(", "),
+          time: convertScheduleTimeToLocalMinutes(schedule[j].time) * 60 + (offset * 24 * 3600),
+          day: day
+        };
+      }
+    }
+  }
+
+  return { bosses: "None", time: null, day: null };
+}
+
+// Convert "HH:MM" (24h) into "h:mm AM/PM" to match table cells
+function formatDisplayTime(timeStr) {
+  let [hours, minutes] = timeStr.split(':').map(Number);
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  return `${hours}:${minutes.toString().padStart(2,'0')} ${ampm}`;
+}
+
+
+    // Function to update boss info and timers
+    function updateBossInfo() {
+  const now = new Date();
+
+  // Current system time (local to user)
+  const currentDateLocal = now;
+
+  const currentHour = currentDateLocal.getHours();
+  const currentMinute = currentDateLocal.getMinutes();
+  const currentSecond = currentDateLocal.getSeconds();
+  const currentDay = currentDateLocal.toLocaleString('en-US', { weekday: 'long' });
+
+
+
+  const currentTimeInMinutes = currentHour * 60 + currentMinute;
+  const currentTimeInSeconds = currentTimeInMinutes * 60 + currentSecond;
+
+  // Find previous, next, and followed by bosses
+  let previousBoss = "None";
+  let previousTime = null;
+  let nextBoss = "None";
+  let nextTime = null;
+  let followedBy = "None";
+  let followedByTime = null;
+  let nextPeriodTime = null;
+  let foundCurrent = false;
+  let followedByDay = currentDay;
+
+  for (let i = 0; i < schedule.length; i++) {
+    const currentSlot = schedule[i];
+    const slotTimeInMinutes = convertScheduleTimeToLocalMinutes(currentSlot.time);
+    const slotTimeInSeconds = slotTimeInMinutes * 60;
+
+    // Check if current time is within or past this time slot
+    if (currentTimeInMinutes >= slotTimeInMinutes) {
+      const bosses = currentSlot.days[currentDay] || [];
+      if (bosses.length > 0) {
+        previousBoss = bosses.map(boss => `<span class="${bossColors[boss]}">${boss}</span>`).join(", ");
+        previousTime = slotTimeInSeconds;
+      }
+    } else if (!foundCurrent) {
+      // Next boss is the first upcoming slot with bosses
+      const bosses = currentSlot.days[currentDay] || [];
+      if (bosses.length > 0) {
+        nextBoss = bosses.map(boss => `<span class="${bossColors[boss]}">${boss}</span>`).join(", ");
+        nextTime = normalizeFutureTime(slotTimeInSeconds, currentTimeInSeconds);
+        nextPeriodTime = currentSlot.time;
+        foundCurrent = true;
+
+        const fb = findFollowedBy(i, currentDay);
+        followedBy = fb.bosses;
+        if (fb.time !== null) {
+          followedByTime = normalizeFutureTime(fb.time, currentTimeInSeconds);
+        }
+        followedByDay = fb.day;
+
+
+      }
+    }
+  }
+
+// Handle case where no more bosses today (or followedBy still None)
+if (nextBoss === "None") {
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const nextDayIndex = (days.indexOf(currentDay) + 1) % 7;
+  const nextDay = days[nextDayIndex];
+  for (let j = 0; j < schedule.length; j++) {
+    const futureBosses = schedule[j].days[nextDay] || [];
+    if (futureBosses.length > 0) {
+      nextBoss = futureBosses.map(boss => `<span class="${bossColors[boss]}">${boss}</span>`).join(", ");
+      nextTime = normalizeFutureTime(
+      convertScheduleTimeToLocalMinutes(schedule[j].time) * 60,
+      currentTimeInSeconds
+    );
+    nextPeriodTime = schedule[j].time;
+
+    //  Use helper to always get proper "followed by"
+    const fb = findFollowedBy(j, nextDay);
+    followedBy = fb.bosses;
+    if (fb.time !== null) {
+      followedByTime = normalizeFutureTime(fb.time, currentTimeInSeconds);
+    }
+    followedByDay = fb.day;
+
+      break;
+    }
+  }
+} else if (followedBy === "None") {
+  //  Even if nextBoss is set, still ensure followedBy gets filled
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const nextDayIndex = (days.indexOf(currentDay) + (nextTime >= 24 * 3600 ? 1 : 0)) % 7;
+  const nextDay = days[nextDayIndex];
+  const nextSlotIndex = schedule.findIndex(slot => slot.time === nextPeriodTime);
+
+  const fb = findFollowedBy(nextSlotIndex, nextDay);
+  followedBy = fb.bosses;
+  followedByTime = fb.time;
+  followedByDay = fb.day;
+}
+
+
+
+  // Update boss info
+  document.getElementById("previous-boss").innerHTML = previousBoss;
+  document.getElementById("next-boss").innerHTML = nextBoss;
+  document.getElementById("followed-by").innerHTML = followedBy;
+
+  // Update timers with conditional coloring
+  if (previousTime !== null) {
+    const timeSince = currentTimeInSeconds - previousTime;
+    document.getElementById("previous-timer").textContent = `Elapsed: ${formatTimeDiff(timeSince)}`;
+    document.getElementById("previous-timer").className = "timer";
+  } else {
+    document.getElementById("previous-timer").textContent = "Elapsed: N/A";
+    document.getElementById("previous-timer").className = "timer";
+  }
+
+  if (nextTime !== null) {
+    const timeUntil = nextTime - currentTimeInSeconds;
+    document.getElementById("next-timer").textContent = `In: ${formatTimeDiff(timeUntil)}`;
+    document.getElementById("next-timer").className = timeUntil < 180 ? "timer-green" : "timer";
+  } else {
+    document.getElementById("next-timer").textContent = "In: N/A";
+    document.getElementById("next-timer").className = "timer";
+  }
+
+  if (followedByTime !== null) {
+    const timeUntil = followedByTime - currentTimeInSeconds;
+    document.getElementById("followed-by-timer").textContent = `In: ${formatTimeDiff(timeUntil)}`;
+    document.getElementById("followed-by-timer").className = timeUntil < 180 ? "timer-green" : "timer";
+  } else {
+    document.getElementById("followed-by-timer").textContent = "In: N/A";
+    document.getElementById("followed-by-timer").className = "timer";
+  }
+
+  // Highlight the exact cell of the next boss
+if (nextPeriodTime) {
+  // Clear old highlights
+  document.querySelectorAll("#boss-table td.next-boss-cell").forEach(cell => {
+    cell.classList.remove("next-boss-cell");
+  });
+
+  const rows = document.querySelectorAll("#boss-table tr");
+  rows.forEach(row => {
+    const timeCell = row.cells[0];
+    if (timeCell && timeCell.textContent === formatDisplayTime(nextPeriodTime)) {
+      const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+      // Work out which day column to highlight
+      const currentDayIndex = days.indexOf(currentDay);
+      const isTomorrow = nextTime >= 24 * 3600;
+      const dayIndex = isTomorrow ? (currentDayIndex + 1) % 7 : currentDayIndex;
+
+      // Highlight the specific day column in this row (+1 because col 0 is Time)
+      const targetCell = row.cells[dayIndex + 1];
+      if (targetCell) {
+        targetCell.classList.add("next-boss-cell");
+      }
+    }
+  });
+}
+
+}
+
+
+    // Initial update
+    updateBossInfo();
+
+    // Update every second for timers
+    setInterval(updateBossInfo, 1000);
+  </script>
+</body>
+</html>

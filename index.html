@@ -132,7 +132,26 @@
       background-color: #424756 !important; /* keep same highlight on hover */
       cursor: pointer;
     }
+    .timer-red {
+    color: #894244 !important; /* Added !important */
+    font-size: 1.3em !important;
+    margin-top: 10px !important;
+    font-weight: bold !important;
+    }
 
+    .timer-green {
+        color: #48bb78 !important; /* Added !important */
+        font-size: 1.5em !important; /* This is correctly larger to make it stand out */
+        margin-top: 5px !important;
+        font-weight: bold !important;
+    }
+
+    .timer-orange {
+        color: #FFA500 !important; /* Added !important */
+        font-size: 1.3em !important;
+        margin-top: 10px !important;
+        font-weight: bold !important;
+}
 
 
     /* Boss-specific colors */
@@ -164,17 +183,17 @@
     <div class="boss-info" role="region" aria-label="Previous Boss">
       <h2>Previous Boss</h2>
       <p id="previous-boss">Loading...</p>
-      <p id="previous-timer" class="timer"></p>
+      <p id="previous-timer"></p>
     </div>
     <div class="boss-info" role="region" aria-label="Next Boss">
       <h2>Next Boss</h2>
       <p id="next-boss">Loading...</p>
-      <p id="next-timer" class="timer"></p>
+      <p id="next-timer"></p>
     </div>
     <div class="boss-info" role="region" aria-label="Followed By">
       <h2>Followed By</h2>
       <p id="followed-by">Loading...</p>
-      <p id="followed-by-timer" class="timer"></p>
+      <p id="followed-by-timer"></p>
     </div>
   </div>
 <table id="boss-table">
@@ -388,10 +407,10 @@ function createBossHTML(bosses) {
     document.getElementById("next-boss").innerHTML = createBossHTML(nextBoss.split(", ").map(b => b.replace(/<[^>]*>/g,'')));
     document.getElementById("followed-by").innerHTML = createBossHTML(followedBy.split(", ").map(b => b.replace(/<[^>]*>/g,'')));
 
-    if (previousTime !== null) {
+      if (previousTime !== null) {
       const timeSince = now.diff(previousTime, 'seconds').toObject().seconds;
-      document.getElementById("previous-timer").textContent = `Spawned ${formatTimeDiff(timeSince)} Ago`;
-      document.getElementById("previous-timer").className = "timer";
+      document.getElementById("previous-timer").textContent = `Spawned ${formatTimeDiff(timeSince)} ago`;
+      document.getElementById("previous-timer").className = "timer-red"; // Always red
     } else {
       document.getElementById("previous-timer").textContent = "N/A";
       document.getElementById("previous-timer").className = "timer";
@@ -399,8 +418,8 @@ function createBossHTML(bosses) {
 
     if (nextTime !== null) {
       const timeUntil = nextTime.diff(now, 'seconds').toObject().seconds;
-      document.getElementById("next-timer").textContent = `Spawning In ${formatTimeDiff(timeUntil)}`;
-      document.getElementById("next-timer").className = timeUntil < 180 ? "timer-green" : "timer";
+      document.getElementById("next-timer").textContent = `Spawning in ${formatTimeDiff(timeUntil)}`;
+      document.getElementById("next-timer").className = "timer-green"; // Always green
     } else {
       document.getElementById("next-timer").textContent = "N/A";
       document.getElementById("next-timer").className = "timer";
@@ -408,8 +427,8 @@ function createBossHTML(bosses) {
 
     if (followedByTime !== null) {
       const timeUntil = followedByTime.diff(now, 'seconds').toObject().seconds;
-      document.getElementById("followed-by-timer").textContent = `Spawning In ${formatTimeDiff(timeUntil)}`;
-      document.getElementById("followed-by-timer").className = timeUntil < 180 ? "timer-green" : "timer";
+      document.getElementById("followed-by-timer").textContent = `Spawning in ${formatTimeDiff(timeUntil)}`;
+      document.getElementById("followed-by-timer").className = "timer-orange"; // Always orange
     } else {
       document.getElementById("followed-by-timer").textContent = "N/A";
       document.getElementById("followed-by-timer").className = "timer";

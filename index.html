@@ -42,7 +42,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Black Desert Online Boss Timer</title>
+  <title>NA Black Desert Online Boss Timer</title>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
   <style>
     body {
@@ -332,6 +332,33 @@ const schedule = [
       "Black Shadow": "boss-BlackShadow"
     };
 
+    // Helper to get boss image filename
+    function getBossImage(bossName) {
+      if (bossName === "Golden Pig King") return "images/pigking.webp";
+      return `images/${bossName.toLowerCase()}.webp`;
+    }
+
+function createBossHTML(bosses) {
+  if (!bosses || bosses.length === 0) return "None";
+  return bosses.map(boss => {
+    const imgSrc = getBossImage(boss);
+    const colorClass = bossColors[boss]; // e.g., "boss-Nouver"
+
+    return `
+      <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+        <img src="${imgSrc}" alt="${boss}" class="${colorClass}" style="
+          width:100px;
+          height:100px;
+          object-fit:cover;
+          border-radius:50%;
+          border: 3px solid; /* uses the color from the class */
+        ">
+        <span class="${colorClass}">${boss}</span>
+      </div>
+    `;
+  }).join("");
+}
+
     // Function to format time difference as HH:MM:SS
     function formatTimeDiff(seconds) {
       const hours = Math.floor(seconds / 3600);
@@ -511,9 +538,10 @@ if (nextBoss === "None") {
 
 
   // Update boss info
-  document.getElementById("previous-boss").innerHTML = previousBoss;
-  document.getElementById("next-boss").innerHTML = nextBoss;
-  document.getElementById("followed-by").innerHTML = followedBy;
+    document.getElementById("previous-boss").innerHTML = createBossHTML(previousBoss.split(", ").map(b => b.replace(/<[^>]*>/g,'')));
+    document.getElementById("next-boss").innerHTML = createBossHTML(nextBoss.split(", ").map(b => b.replace(/<[^>]*>/g,'')));
+    document.getElementById("followed-by").innerHTML = createBossHTML(followedBy.split(", ").map(b => b.replace(/<[^>]*>/g,'')));
+
 
   // Update timers with conditional coloring
   if (previousTime !== null) {
@@ -579,5 +607,21 @@ if (nextPeriodTime) {
     // Update every second for timers
     setInterval(updateBossInfo, 1000);
   </script>
+  <hr style="
+  border: none;
+  height: 1px;
+  background: linear-gradient(to right, rgba(70,130,180,0), rgba(70,130,180,0.8), rgba(70,130,180,0));
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  margin: 25px 0 10px 0;
+">
+<footer id="footer" style="text-align:center; margin-top:5px; padding:10px; color:#D3D3D3; font-size:0.9em;">
+  &copy; 2012&ndash;<span id="current-year"></span> 
+  <a href="https://fayiette.com/" target="_blank" style="color:#4682B4; text-decoration:none;">Fayiette&trade;</a> &mdash; All Rights Reserved.
+</footer>
+
+<script>
+  document.getElementById('current-year').textContent = new Date().getFullYear();
+</script>
+
 </body>
 </html>

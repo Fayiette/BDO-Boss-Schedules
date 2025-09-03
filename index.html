@@ -355,7 +355,7 @@ function createBossHTML(bosses) {
   function updateBossInfo() {
     const now = DateTime.local();
     const scheduleTimezone = 'UTC+10';
-    const currentDay = now.toLocaleString({ weekday: 'long' });
+    const delayMinutes = 3;
 
     let previousBoss = "None";
     let previousTime = null;
@@ -364,101 +364,164 @@ function createBossHTML(bosses) {
     let followedBy = "None";
     let followedByTime = null;
     let nextPeriodLuxon = null;
+    let previousActualSpawnTime = null;
 
     function createScheduleTime(timeStr) {
-      const [hours, minutes] = timeStr.split(':').map(Number);
-      return DateTime.fromObject({ hour: hours, minute: minutes }, { zone: scheduleTimezone });
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        return DateTime.fromObject({ hour: hours, minute: minutes }, { zone: scheduleTimezone });
     }
 
+    let foundNext = false;
+    let foundFollowedBy = false;
+
+    // Loop through a few days to find the next bosses
     for (let i = -1; i <= 7; i++) {
-      const checkDayLuxon = now.plus({ days: i });
-      const checkDay = checkDayLuxon.toLocaleString({ weekday: 'long' });
+        const checkDayLuxon = now.plus({ days: i });
+        const checkDay = checkDayLuxon.toLocaleString({ weekday: 'long' });
 
-      for (const slot of schedule) {
-        const bosses = slot.days[checkDay] || [];
-        if (bosses.length === 0) continue;
+        for (const slot of schedule) {
+            const bosses = slot.days[checkDay] || [];
+            if (bosses.length === 0) continue;
 
-        const scheduleTimeUTC10 = createScheduleTime(slot.time);
-        const scheduleTime = scheduleTimeUTC10.set({ year: checkDayLuxon.year, month: checkDayLuxon.month, day: checkDayLuxon.day });
-        const scheduleTimeLocal = scheduleTime.setZone(now.zone);
-          
-        if (scheduleTimeLocal <= now && (previousTime === null || scheduleTimeLocal > previousTime)) {
-          previousBoss = bosses.map(boss => `<span class="${bossColors[boss]}">${boss}</span>`).join(", ");
-          previousTime = scheduleTimeLocal;
+            const scheduleTimeUTC10 = createScheduleTime(slot.time);
+            const scheduleTime = scheduleTimeUTC10.set({ year: checkDayLuxon.year, month: checkDayLuxon.month, day: checkDayLuxon.day });
+            const scheduleTimeLocal = scheduleTime.setZone(now.zone);
+            const delayedTimeLocal = scheduleTimeLocal.plus({ minutes: delayMinutes });
+
+            // Check for previous boss
+            if (delayedTimeLocal <= now && (previousTime === null || delayedTimeLocal > previousTime)) {
+                previousBoss = bosses.map(boss => `<span class="${bossColors[boss]}">${boss}</span>`).join(", ");
+                previousTime = delayedTimeLocal;
+                previousActualSpawnTime = scheduleTimeLocal; // Add this line
+            }
+
+            // Check for next boss with delay
+            if (!foundNext && now <= delayedTimeLocal) {
+                nextBoss = bosses.map(boss => `<span class="${bossColors[boss]}">${boss}</span>`).join(", ");
+                nextTime = scheduleTimeLocal;
+                nextPeriodLuxon = nextTime;
+                foundNext = true;
+            } else if (foundNext && !foundFollowedBy && now <= delayedTimeLocal) {
+                // This logic needs to be a bit more robust to handle cases where the next boss is also in the past
+                // The main change is in the previous `if` block. Let's simplify the logic slightly.
+            }
+
+            // Simplified logic for next and followed by
+            if (scheduleTimeLocal > now) {
+                if (nextTime === null) {
+                    nextBoss = bosses.map(boss => `<span class="${bossColors[boss]}">${boss}</span>`).join(", ");
+                    nextTime = scheduleTimeLocal;
+                    nextPeriodLuxon = nextTime;
+                } else if (followedByTime === null && scheduleTimeLocal.toISO() !== nextTime.toISO()) {
+                    followedBy = bosses.map(boss => `<span class="${bossColors[boss]}">${boss}</span>`).join(", ");
+                    followedByTime = scheduleTimeLocal;
+                }
+            }
         }
+    }
+    
+    // Check if the current next boss is within the delay period
+    if (nextTime && nextTime.plus({ minutes: delayMinutes }) < now) {
+      // Find the next two bosses, starting from the one after the previous one.
+      const nowWithDelay = now.minus({minutes: delayMinutes});
+      let nextNextBossFound = false;
+      let nextNextBossTime = null;
 
-        if (scheduleTimeLocal > now) {
-          if (nextTime === null) {
-            nextBoss = bosses.map(boss => `<span class="${bossColors[boss]}">${boss}</span>`).join(", ");
-            nextTime = scheduleTimeLocal;
-            nextPeriodLuxon = scheduleTimeLocal;
-          } else if (followedByTime === null) {
-            followedBy = bosses.map(boss => `<span class="${bossColors[boss]}">${boss}</span>`).join(", ");
-            followedByTime = scheduleTimeLocal;
-          } else {
-            i = 8;
-            break;
-          }
+      for (let i = -1; i <= 7; i++) {
+        const checkDayLuxon = now.plus({ days: i });
+        const checkDay = checkDayLuxon.toLocaleString({ weekday: 'long' });
+        
+        for (const slot of schedule) {
+            const bosses = slot.days[checkDay] || [];
+            if (bosses.length === 0) continue;
+
+            const scheduleTimeUTC10 = createScheduleTime(slot.time);
+            const scheduleTime = scheduleTimeUTC10.set({ year: checkDayLuxon.year, month: checkDayLuxon.month, day: checkDayLuxon.day });
+            const scheduleTimeLocal = scheduleTime.setZone(now.zone);
+            
+            if(scheduleTimeLocal > nowWithDelay) {
+              if (nextNextBossFound === false) {
+                nextBoss = bosses.map(boss => `<span class="${bossColors[boss]}">${boss}</span>`).join(", ");
+                nextTime = scheduleTimeLocal;
+                nextPeriodLuxon = nextTime;
+                nextNextBossFound = true;
+              } else if (nextNextBossTime === null) {
+                followedBy = bosses.map(boss => `<span class="${bossColors[boss]}">${boss}</span>`).join(", ");
+                followedByTime = scheduleTimeLocal;
+                nextNextBossTime = scheduleTimeLocal;
+                break; // Exit the inner loop
+              }
+            }
         }
+        if (nextNextBossTime) break; // Exit the outer loop
       }
     }
 
-    document.getElementById("previous-boss").innerHTML = createBossHTML(previousBoss.split(", ").map(b => b.replace(/<[^>]*>/g,'')));
-    document.getElementById("next-boss").innerHTML = createBossHTML(nextBoss.split(", ").map(b => b.replace(/<[^>]*>/g,'')));
-    document.getElementById("followed-by").innerHTML = createBossHTML(followedBy.split(", ").map(b => b.replace(/<[^>]*>/g,'')));
+    document.getElementById("previous-boss").innerHTML = createBossHTML(previousBoss.split(", ").map(b => b.replace(/<[^>]*>/g, '')));
+    document.getElementById("next-boss").innerHTML = createBossHTML(nextBoss.split(", ").map(b => b.replace(/<[^>]*>/g, '')));
+    document.getElementById("followed-by").innerHTML = createBossHTML(followedBy.split(", ").map(b => b.replace(/<[^>]*>/g, '')));
 
-      if (previousTime !== null) {
-      const timeSince = now.diff(previousTime, 'seconds').toObject().seconds;
-      document.getElementById("previous-timer").textContent = `Spawned ${formatTimeDiff(timeSince)} ago`;
-      document.getElementById("previous-timer").className = "timer-red"; // Always red
+    if (previousActualSpawnTime !== null) {
+        const timeSince = now.diff(previousActualSpawnTime, 'seconds').toObject().seconds;
+        document.getElementById("previous-timer").textContent = `Spawned ${formatTimeDiff(timeSince)} ago`;
+        document.getElementById("previous-timer").className = "timer-red";
     } else {
-      document.getElementById("previous-timer").textContent = "N/A";
-      document.getElementById("previous-timer").className = "timer";
+        document.getElementById("previous-timer").textContent = "N/A";
+        document.getElementById("previous-timer").className = "timer";
     }
 
     if (nextTime !== null) {
-      const timeUntil = nextTime.diff(now, 'seconds').toObject().seconds;
-      document.getElementById("next-timer").textContent = `Spawning in ${formatTimeDiff(timeUntil)}`;
-      document.getElementById("next-timer").className = "timer-green"; // Always green
+        const timeUntil = nextTime.diff(now, 'seconds').toObject().seconds;
+
+        if (timeUntil < 0) {
+            // The boss is in the delay period, so show time since it spawned
+            const timeSince = now.diff(nextTime, 'seconds').toObject().seconds;
+            document.getElementById("next-timer").textContent = `Spawned ${formatTimeDiff(timeSince)} ago`;
+            document.getElementById("next-timer").className = "timer-green"; // Still green because it's the "current" boss
+        } else {
+            // Boss is still in the future, show time until spawn
+            document.getElementById("next-timer").textContent = `Spawning in ${formatTimeDiff(timeUntil)}`;
+            document.getElementById("next-timer").className = "timer-green";
+        }
     } else {
-      document.getElementById("next-timer").textContent = "N/A";
-      document.getElementById("next-timer").className = "timer";
+        document.getElementById("next-timer").textContent = "N/A";
+        document.getElementById("next-timer").className = "timer";
     }
 
     if (followedByTime !== null) {
-      const timeUntil = followedByTime.diff(now, 'seconds').toObject().seconds;
-      document.getElementById("followed-by-timer").textContent = `Spawning in ${formatTimeDiff(timeUntil)}`;
-      document.getElementById("followed-by-timer").className = "timer-orange"; // Always orange
+        const timeUntil = followedByTime.diff(now, 'seconds').toObject().seconds;
+        document.getElementById("followed-by-timer").textContent = `Spawning in ${formatTimeDiff(timeUntil)}`;
+        document.getElementById("followed-by-timer").className = "timer-orange";
     } else {
-      document.getElementById("followed-by-timer").textContent = "N/A";
-      document.getElementById("followed-by-timer").className = "timer";
+        document.getElementById("followed-by-timer").textContent = "N/A";
+        document.getElementById("followed-by-timer").className = "timer";
     }
 
     if (nextPeriodLuxon) {
-      document.querySelectorAll("#boss-table td.next-boss-cell").forEach(cell => {
-        cell.classList.remove("next-boss-cell");
-      });
+        document.querySelectorAll("#boss-table td.next-boss-cell").forEach(cell => {
+            cell.classList.remove("next-boss-cell");
+        });
 
-      const timeStringLocal = nextPeriodLuxon.toLocaleString(DateTime.TIME_SIMPLE).replace(/\s/g,'');
-      const dayOfWeekLocal = nextPeriodLuxon.toLocaleString({ weekday: 'long' });
+        const timeStringLocal = nextPeriodLuxon.toLocaleString(DateTime.TIME_SIMPLE).replace(/\s/g, '');
+        const dayOfWeekLocal = nextPeriodLuxon.toLocaleString({ weekday: 'long' });
 
-      const rows = document.querySelectorAll("#boss-table tr");
-      const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-      const dayIndex = days.indexOf(dayOfWeekLocal);
-      
-      rows.forEach(row => {
-        const timeCell = row.cells[0];
-        if (timeCell && timeCell.textContent.replace(/\s/g,'').toLowerCase().includes(timeStringLocal.toLowerCase())) {
-          if (dayIndex !== -1) {
-            const targetCell = row.cells[dayIndex + 1];
-            if (targetCell) {
-              targetCell.classList.add("next-boss-cell");
+        const rows = document.querySelectorAll("#boss-table tr");
+        const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+        const dayIndex = days.indexOf(dayOfWeekLocal);
+
+        rows.forEach(row => {
+            const timeCell = row.cells[0];
+            if (timeCell && timeCell.textContent.replace(/\s/g, '').toLowerCase().includes(timeStringLocal.toLowerCase())) {
+                if (dayIndex !== -1) {
+                    const targetCell = row.cells[dayIndex + 1];
+                    if (targetCell) {
+                        targetCell.classList.add("next-boss-cell");
+                    }
+                }
             }
-          }
-        }
-      });
+        });
     }
-  }
+}
 
   // Initial table build and update
   updateDayHeaders();

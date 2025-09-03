@@ -390,28 +390,28 @@ function createBossHTML(bosses) {
 
     if (previousTime !== null) {
       const timeSince = now.diff(previousTime, 'seconds').toObject().seconds;
-      document.getElementById("previous-timer").textContent = `Elapsed: ${formatTimeDiff(timeSince)}`;
+      document.getElementById("previous-timer").textContent = `Spawned ${formatTimeDiff(timeSince)} Ago`;
       document.getElementById("previous-timer").className = "timer";
     } else {
-      document.getElementById("previous-timer").textContent = "Elapsed: N/A";
+      document.getElementById("previous-timer").textContent = "N/A";
       document.getElementById("previous-timer").className = "timer";
     }
 
     if (nextTime !== null) {
       const timeUntil = nextTime.diff(now, 'seconds').toObject().seconds;
-      document.getElementById("next-timer").textContent = `In: ${formatTimeDiff(timeUntil)}`;
+      document.getElementById("next-timer").textContent = `Spawning In ${formatTimeDiff(timeUntil)}`;
       document.getElementById("next-timer").className = timeUntil < 180 ? "timer-green" : "timer";
     } else {
-      document.getElementById("next-timer").textContent = "In: N/A";
+      document.getElementById("next-timer").textContent = "N/A";
       document.getElementById("next-timer").className = "timer";
     }
 
     if (followedByTime !== null) {
       const timeUntil = followedByTime.diff(now, 'seconds').toObject().seconds;
-      document.getElementById("followed-by-timer").textContent = `In: ${formatTimeDiff(timeUntil)}`;
+      document.getElementById("followed-by-timer").textContent = `Spawning In ${formatTimeDiff(timeUntil)}`;
       document.getElementById("followed-by-timer").className = timeUntil < 180 ? "timer-green" : "timer";
     } else {
-      document.getElementById("followed-by-timer").textContent = "In: N/A";
+      document.getElementById("followed-by-timer").textContent = "N/A";
       document.getElementById("followed-by-timer").className = "timer";
     }
 

@@ -223,26 +223,36 @@ const schedule = [
     return `images/${bossName.toLowerCase().replace(/ /g, '')}.webp`;
   }
 
-  function createBossHTML(bosses) {
-    if (!bosses || bosses.length === 0) return "None";
-    return bosses.map(boss => {
-      const imgSrc = getBossImage(boss);
-      const colorClass = bossColors[boss];
+function createBossHTML(bosses) {
+  if (!bosses || bosses.length === 0 || bosses.includes("None")) return "None";
 
-      return `
-        <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
-          <img src="${imgSrc}" alt="${boss}" class="${colorClass}" style="
-            width:100px;
-            height:100px;
-            object-fit:cover;
-            border-radius:50%;
-            border: 3px solid;
+  return `
+    <div style="display:flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: 10px;">
+      ${bosses.map(boss => {
+        const imgSrc = getBossImage(boss);
+        const colorClass = bossColors[boss];
+
+        return `
+          <div style="
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            text-align:center;
           ">
-          <span class="${colorClass}">${boss}</span>
-        </div>
-      `;
-    }).join("");
-  }
+            <img src="${imgSrc}" alt="${boss}" class="${colorClass}" style="
+              width: 100px;
+              height: 100px;
+              object-fit: cover;
+              border-radius: 50%;
+              border: 3px solid;
+            ">
+            <span class="${colorClass}" style="font-size: 0.8em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${boss}</span>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
 
   function formatTimeDiff(seconds) {
     const hours = Math.floor(seconds / 3600);
